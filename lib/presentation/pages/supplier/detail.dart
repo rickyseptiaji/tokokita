@@ -14,6 +14,7 @@ class _DetailSupplierState extends State<DetailSupplier> {
   final nameController = TextEditingController();
   final phoneController = TextEditingController();
   final addressController = TextEditingController();
+  bool isLoaded = false;
   late Future<Map<String, dynamic>> future;
   Future<Map<String, dynamic>> getSuppliers() async {
     final response = await supabase
@@ -37,6 +38,31 @@ class _DetailSupplierState extends State<DetailSupplier> {
     });
   }
 
+  Future<void> updateSupplier() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    try {
+      await supabase
+          .from('suppliers')
+          .update({
+            'name': nameController.text,
+            'phone': phoneController.text,
+            'address': addressController.text,
+          })
+          .eq('id', widget.id);
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Berhasil diupdate')));
+
+      Navigator.pop(context, true);
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -51,10 +77,13 @@ class _DetailSupplierState extends State<DetailSupplier> {
           if (snapshot.hasError) {
             return Center(child: Text('Error: ${snapshot.error}'));
           }
-
           final data = snapshot.data!;
-          nameController.text = data['name'] ?? '';
-          phoneController.text = data['phone'] ?? '';
+          if (!isLoaded) {
+            nameController.text = data['name'] ?? '';
+            phoneController.text = data['phone'] ?? '';
+            addressController.text = data['address'] ?? '';
+            isLoaded = true;
+          }
 
           return Padding(
             padding: const EdgeInsets.all(8.0),
@@ -76,6 +105,20 @@ class _DetailSupplierState extends State<DetailSupplier> {
                       labelText: 'Nomor Telepon',
                       border: OutlineInputBorder(),
                     ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: addressController,
+                    decoration: const InputDecoration(
+                      labelText: 'Alamat',
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLines: 3,
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: updateSupplier,
+                    child: const Text('Simpan Perubahan'),
                   ),
                 ],
               ),

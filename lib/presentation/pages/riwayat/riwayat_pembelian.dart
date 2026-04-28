@@ -89,13 +89,12 @@ class _RiwayatPembelianState extends State<RiwayatPembelian> {
                       itemCount: data.length,
                       itemBuilder: (context, index) {
                         final item = data[index];
-
                         return Card(
                           child: ListTile(
                             leading: const Icon(Icons.shopping_cart),
 
                             title: Text(
-                              'Supplier: ${item['supplier']?['name'] ?? '-'}',
+                              'Supplier: ${item['suppliers']?['name'] ?? '-'}',
                             ),
 
                             subtitle: Text(
