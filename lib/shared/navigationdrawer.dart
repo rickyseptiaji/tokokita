@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tokokita/presentation/pages/dashboard/dashboard.dart';
 import 'package:tokokita/presentation/pages/penjualan/penjualan.dart';
 import 'package:tokokita/presentation/pages/produk/produk.dart';
 import 'package:tokokita/presentation/pages/supplier/supplier.dart';
@@ -43,7 +44,7 @@ class _NavbarState extends State<NavbarDrawer> {
   Widget _buildBody() {
     switch (selectedPage) {
       case 'Dashboard':
-        return const Text('Dashboard Page');
+        return const DashboardPage();
       case 'Produk':
         return const ProdukPage();
       case 'Supplier':
