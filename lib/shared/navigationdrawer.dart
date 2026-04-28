@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tokokita/presentation/pages/penjualan/penjualan.dart';
 import 'package:tokokita/presentation/pages/produk/produk.dart';
 import 'package:tokokita/presentation/pages/supplier/supplier.dart';
 import 'package:tokokita/shared/buttomnavbar.dart';
@@ -48,7 +49,7 @@ class _NavbarState extends State<NavbarDrawer> {
       case 'Supplier':
         return const SupplierPage();
       case 'Penjualan':
-        return const Text('Penjualan Page');
+        return const PenjualanPage();
       case 'Riwayat':
         return const BottomNavbar();
       default:

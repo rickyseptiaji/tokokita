@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:tokokita/core/bucket.dart';
 
-class PembelianPage extends StatefulWidget {
-  final String id;
-  const PembelianPage({super.key, required this.id});
+class FormPenjualan extends StatefulWidget {
+  const FormPenjualan({super.key});
 
   @override
-  State<PembelianPage> createState() => _PembelianPageState();
+  State<FormPenjualan> createState() => _FormPenjualanState();
 }
 
-class _PembelianPageState extends State<PembelianPage> {
+class _FormPenjualanState extends State<FormPenjualan> {
   final _formKey = GlobalKey<FormState>();
-
+  final namaPelangganController = TextEditingController();
+  final noTeleponController = TextEditingController();
   late Future<List<Map<String, dynamic>>> futureProducts;
 
   List<Map<String, dynamic>> selectedProducts = [];
@@ -76,44 +76,6 @@ class _PembelianPageState extends State<PembelianPage> {
     }
 
     try {
-      final purchase = await supabase
-          .from('purchases')
-          .insert({
-            'supplier_id': widget.id,
-            'total_price': getGrandTotal(),
-            'created_at': DateTime.now().toIso8601String(),
-          })
-          .select()
-          .single();
-
-      final purchaseId = purchase['id'];
-      await supabase
-          .from('purchase_items')
-          .insert(
-            selectedProducts.map((item) {
-              final qty = item['qty'] as int;
-              final price = (item['price'] as num).toDouble();
-
-              return {
-                'purchase_id': purchaseId,
-                'product_id': item['product']['id'],
-                'qty': qty,
-                'price': price,
-                'subtotal': qty * price,
-              };
-            }).toList(),
-          );
-
-      final movements = selectedProducts.map((item) {
-        return {
-          'product_id': item['product']['id'],
-          'type': 'IN',
-          'qty': item['qty'],
-          'reference_id': purchaseId,
-          'created_at': DateTime.now().toIso8601String(),
-        };
-      }).toList();
-      await supabase.from('stock_movements').insert(movements);
       for (var item in selectedProducts) {
         final productId = item['product']['id'];
         final qty = item['qty'];
@@ -122,18 +84,81 @@ class _PembelianPageState extends State<PembelianPage> {
             .from('products')
             .select('stock')
             .eq('id', productId)
-            .single();
+            .maybeSingle();
 
-        final currentStock = (current['stock'] ?? 0) as int;
+        final stock = (current?['stock'] ?? 0) as num;
+
+        if (stock < qty) {
+          throw Exception('Stok tidak cukup untuk ${item['product']['name']}');
+        }
+      }
+
+      final order = await supabase
+          .from('orders')
+          .insert({
+            'customer_name': namaPelangganController.text,
+            'customer_phone': noTeleponController.text,
+            'total_price': getGrandTotal(),
+            'status': 'paid',
+            'created_at': DateTime.now().toIso8601String(),
+          })
+          .select()
+          .single();
+
+      final orderId = order['id'];
+
+      await supabase
+          .from('order_items')
+          .insert(
+            selectedProducts.map((item) {
+              final qty = item['qty'] as int;
+              final price = (item['price'] as num).toDouble();
+
+              return {
+                'order_id': orderId,
+                'product_id': item['product']['id'],
+                'qty': qty,
+                'price': price,
+                'subtotal': qty * price,
+              };
+            }).toList(),
+          );
+
+      await supabase
+          .from('stock_movements')
+          .insert(
+            selectedProducts.map((item) {
+              return {
+                'product_id': item['product']['id'],
+                'type': 'OUT',
+                'qty': item['qty'],
+                'reference_id': orderId,
+                'created_at': DateTime.now().toIso8601String(),
+              };
+            }).toList(),
+          );
+
+      for (var item in selectedProducts) {
+        final productId = item['product']['id'];
+        final qty = item['qty'];
+
+        final current = await supabase
+            .from('products')
+            .select('stock')
+            .eq('id', productId)
+            .maybeSingle();
+
+        final currentStock = (current?['stock'] ?? 0) as num;
 
         await supabase
             .from('products')
-            .update({'stock': currentStock + qty})
+            .update({'stock': currentStock.toInt() - qty})
             .eq('id', productId);
       }
+
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Berhasil disimpan')));
+      ).showSnackBar(const SnackBar(content: Text('Order berhasil')));
 
       setState(() {
         selectedProducts.clear();
@@ -149,7 +174,7 @@ class _PembelianPageState extends State<PembelianPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Pembelian')),
+      appBar: AppBar(title: const Text('Penjualan')),
       body: FutureBuilder<List<Map<String, dynamic>>>(
         future: futureProducts,
         builder: (context, snapshot) {
@@ -169,12 +194,11 @@ class _PembelianPageState extends State<PembelianPage> {
               key: _formKey,
               child: ListView(
                 children: [
-                  DropdownButtonFormField<Map<String, dynamic>>( 
+                  DropdownButtonFormField<Map<String, dynamic>>(
                     initialValue: selectedDropdown,
                     hint: const Text("Pilih Produk"),
                     items: products.map((product) {
                       return DropdownMenuItem(
-
                         value: product,
                         child: Row(
                           children: [
@@ -285,10 +309,42 @@ class _PembelianPageState extends State<PembelianPage> {
                   ),
 
                   const SizedBox(height: 20),
-
+                  TextFormField(
+                    controller: namaPelangganController,
+                    decoration: const InputDecoration(
+                      labelText: 'Nama Pelanggan',
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Nama pelanggan tidak boleh kosong';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  TextFormField(
+                    controller: noTeleponController,
+                    decoration: const InputDecoration(
+                      labelText: 'No. Telepon Pelanggan',
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'No. Telepon tidak boleh kosong';
+                      }
+                      return null;
+                    },
+                  ),
+                  SizedBox(height: 20),
                   ElevatedButton(
-                    onPressed: submit,
+                      onPressed: () {
+                        if (_formKey.currentState!.validate()) {
+                          submit();
+                        }
+                      },
                     child: const Text('Submit'),
+
                   ),
                 ],
               ),
