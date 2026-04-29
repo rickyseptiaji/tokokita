@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tokokita/core/bucket.dart';
+import 'package:tokokita/presentation/pages/produk/detail.dart';
 import 'package:tokokita/presentation/pages/produk/form.dart';
 
 class ProdukPage extends StatefulWidget {
@@ -11,6 +12,7 @@ class ProdukPage extends StatefulWidget {
 
 class _ProdukPageState extends State<ProdukPage> {
   late Future<List<Map<String, dynamic>>> futureProducts;
+
   Future<List<Map<String, dynamic>>> getProducts() async {
     final response = await supabase
         .from('products')
@@ -30,6 +32,49 @@ class _ProdukPageState extends State<ProdukPage> {
     setState(() {
       futureProducts = getProducts();
     });
+  }
+
+  Future<void> deleteProduct(String id) async {
+    await supabase.from('products').delete().eq('id', id);
+  }
+
+  void showActionMenu(BuildContext context, Map<String, dynamic> p) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.edit),
+              title: const Text('Detail Produk'),
+              onTap: () async {
+                Navigator.pop(context);
+
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => DetailProduk(id: p['id'])),
+                );
+
+                refresh();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete, color: Colors.red),
+              title: const Text('Hapus Produk'),
+              onTap: () async {
+                Navigator.pop(context);
+
+                await deleteProduct(p['id']);
+                refresh();
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -91,70 +136,57 @@ class _ProdukPageState extends State<ProdukPage> {
                     itemBuilder: (context, index) {
                       final p = products[index];
 
-                      return Card(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: p['image_url'] != null
-                                  ? ClipRRect(
-                                      borderRadius: const BorderRadius.vertical(
-                                        top: Radius.circular(12),
-                                      ),
-                                      child: Image.network(
-                                        p['image_url'],
-                                        width: double.infinity,
-                                        fit: BoxFit.cover,
-                                        loadingBuilder: (context, child, loadingProgress) {
-                                          if (loadingProgress == null) {
-                                            return child;
-                                          }
-
-                                          return Center(
-                                            child: CircularProgressIndicator(
-                                              value:
-                                                  loadingProgress
-                                                          .expectedTotalBytes !=
-                                                      null
-                                                  ? loadingProgress
-                                                            .cumulativeBytesLoaded /
-                                                        loadingProgress
-                                                            .expectedTotalBytes!
-                                                  : null,
+                      return GestureDetector(
+                        onLongPress: () {
+                          showActionMenu(context, p);
+                        },
+                        child: Card(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: p['image_url'] != null
+                                    ? ClipRRect(
+                                        borderRadius:
+                                            const BorderRadius.vertical(
+                                              top: Radius.circular(12),
                                             ),
-                                          );
-                                        },
-                                        errorBuilder:
-                                            (context, error, stackTrace) {
-                                              return const Center(
-                                                child: Icon(Icons.broken_image),
-                                              );
-                                            },
-                                      ),
-                                    )
-                                  : const Center(child: Icon(Icons.image)),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    p['name'] ?? '',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text("Rp ${p['price']}"),
-                                  Text("Stock: ${p['stock']}"),
-                                ],
+                                        child: Image.network(
+                                          p['image_url'],
+                                          width: double.infinity,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (context, error, _) {
+                                            return const Center(
+                                              child: Icon(Icons.broken_image),
+                                            );
+                                          },
+                                        ),
+                                      )
+                                    : const Center(child: Icon(Icons.image)),
                               ),
-                            ),
-                          ],
+
+                              Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      p['name'] ?? '',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text("Rp ${p['price']}"),
+                                    Text("Stock: ${p['stock']}"),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       );
                     },
