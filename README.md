@@ -4,13 +4,24 @@ A new Flutter project.
 
 ## Getting Started
 
-This project is a starting point for a Flutter application.
+Dashboard
+Hasil dari perhitungan
 
-A few resources to get you started if this is your first Flutter project:
+Produk
+Tambah produk
+Edit Produk tekan tahan pada produk yang sudah di buat
+Delete produk tekan tahan pada produk yang sudah di buat
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+Supplier
+Tambah supplier
+Beli Produk dari supplier tinggal geser dari list supplier lalu Beli
+Edit supplier tinggal geser dari list supplier
+Delete supplier tinggal geser dari list supplier
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Penjualan
+Tambah Penjualan
+Detail Penjualan tinggal geser dari list penjualan
+Delete penjualan tinggal geser dari list penjualan
+
+Riwayat
+Melihat riwayat pembelian dan penjualan
